@@ -1,5 +1,5 @@
 # E-commerce Management 电商后台管理系统
-### 项目API接口来自黑马提供，接口根路径：`https://www.liulongbin.top:8888/api/private/v1/`，[点击查看API接口文档](https://pan.baidu.com/s/1KJPfaFaPadW4JdGjCt54NQ )
+### 项目API接口来自黑马提供，接口根路径：`https://www.liulongbin.top:8888/api/private/v1/`，[点击查看API接口文档](https://pan.baidu.com/s/1KJPfaFaPadW4JdGjCt54NQ )，提取码：mgbr
 
 #### 项目技术栈：
 * Vue2：采用最新Vue2的语法
