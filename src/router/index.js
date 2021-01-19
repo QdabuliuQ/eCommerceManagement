@@ -5,11 +5,20 @@ Vue.use(VueRouter)
 // 路由懒加载
 const login = () => import ("views/login/Login.vue")   // 登录页面
 const managementView = () => import ("views/managementView/ManagementView.vue")  // 管理页面
+const welcomeView = () => import ("views/welcomeView/WelcomeView.vue")  // 欢迎界面
 
 const routes = [
   { path: '/', redirect: '/login' },   // 路由重定向
   { path: '/login', component: login },
-  { path: '/managementView', component: managementView }
+  { 
+    path: '/managementView', 
+    component: managementView, 
+    redirect: '/welcome',   // 路由重定向
+    children:[
+      { path: '/welcome', component: welcomeView },
+      { path: '/users', component: () => import ("components/private/User.vue")}
+    ] 
+  }
 ]
 
 const router = new VueRouter({

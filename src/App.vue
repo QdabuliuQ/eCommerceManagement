@@ -16,6 +16,7 @@ export default {
   /* @import "assets/css/iconfont.css";     */
   #app{
     width: 100vw;
+    overflow-x: hidden;
     height: 100vh;
   }
 </style>

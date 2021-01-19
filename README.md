@@ -43,3 +43,33 @@
     return config
   })
   ```
+
+* 3、基于Elementui中的Breadcrumb组件进行二次封装
+  * 3.1、通过 props 父子组件通信进行传递数据，在父组件调用的时候必须传入一个数组
+  ```html
+  <template>
+    <div id="BrandCrumb">
+      <el-breadcrumb separator-class="el-icon-arrow-right">
+        <el-breadcrumb-item class="firstItem">首页</el-breadcrumb-item>
+        <el-breadcrumb-item v-for="(item, index) in crumbList" :key="index">{{item}}</el-breadcrumb-item>
+      </el-breadcrumb>
+    </div>
+  </template>
+  ```
+  ```js
+  props: {
+    // 菜单项
+    crumbList: {
+      type: Array,
+      default: () => ["用户管理","用户列表"]
+    }
+  },
+  ```
+  * 3.2、在导航栏切换的时候通过获取 Fid(一级菜单的id) 和 Sid(二级菜单的id) 通过 find 函数搜索到对应的一级菜单名称和二级菜单名称。保存到数组中，并转为`JSON`格式保存到内存中。
+  ```js
+  let menuName1 = (this.menuList.find( item => item.id == Fid)).authName
+  let menuName2 = ((this.menuList.find( item => item.id == Fid)).children.find( i => i.id == Sid )).authName
+  let arrName = [menuName1, menuName2]
+  window.sessionStorage.setItem("menuName", JSON.stringify(arrName))
+  ```
+  * 3.3、在之前实现该功能的时候使用过`EventBus事件总线`通过点击菜单，发送事件总线给对应的组件，但是在点击菜单后开始发送事件总线的时候，由于组件还未被创建出来，导致组件无法接收到数据从而出现BUG，所以才使用本地储存的方式。

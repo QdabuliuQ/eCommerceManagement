@@ -19,21 +19,23 @@
           <i :class="showMenu ? 'iconfont icon-zuo' : 'iconfont icon-you'"></i>
         </div>
         <el-menu
+          :router="true"
           :mode="'vertical'"
           :collapse="!showMenu"
           :unique-opened="true"
           :collapse-transition="false"
+          :default-active="activePath"
           background-color="#333744"
           text-color="#fff"
           active-text-color="#406BFF">
           <!-- 遍历一级菜单 -->
-          <el-submenu v-for="item in menuList" :key="item.id" :index="item.id + ''">
+          <el-submenu v-for="(item) in menuList" :key="item.id" :index="item.id + ''">
             <template slot="title">
               <i class="menu_item_icon" :class="iconsObj[item.id]"></i>
               <span>{{item.authName}}</span>
             </template>
             <!-- 遍历二级菜单 -->
-            <el-menu-item v-for="itemSon in item.children" :key="itemSon.id" :index="item.id + '-'+ itemSon.id">
+            <el-menu-item @click="menuItem('/' + itemSon.path, item.id, itemSon.id)" v-for="(itemSon) in item.children" :key="itemSon.id" :index=" '/' + itemSon.path">
               <template slot="title">
                 <i class="el-icon-menu"></i>
                 <span>{{itemSon.authName}}</span>
@@ -42,7 +44,10 @@
           </el-submenu>
         </el-menu>
       </el-aside>
-      <el-main>Main</el-main>
+      <el-main>
+        <!-- 路由占位符 -->
+        <router-view></router-view>
+      </el-main>
     </el-container>
   </el-container>
 </template>
@@ -62,6 +67,7 @@ export default {
         '145': 'iconfont icon-iconfontpaixingbang'
       },
       showMenu: true,   // 显示/隐藏菜单
+      activePath: '',  // 菜单激活路径
     }
   },
   methods: {
@@ -74,14 +80,28 @@ export default {
     // 左侧菜单显示隐藏
     toggleMenu(){
       this.showMenu = !this.showMenu
+    },
+
+    // 子菜单高亮
+    menuItem(path, Fid, Sid) {
+      window.sessionStorage.setItem("activePath", path)
+      this.activePath = path
+      let menuName1 = (this.menuList.find( item => item.id == Fid)).authName
+      let menuName2 = ((this.menuList.find( item => item.id == Fid)).children.find( i => i.id == Sid )).authName
+      let arrName = [menuName1, menuName2]
+      window.sessionStorage.setItem("menuName", JSON.stringify(arrName))
     }
   },
 
   // 页面加载生命周期函数
   created () {
+    // 获取左侧菜单数据
     getNavitem().then(res => {
       this.menuList = res.data.data
     })
+
+    // 获取菜单激活索引
+    this.activePath = window.sessionStorage.getItem("activePath")
   }
 }
 
@@ -100,6 +120,7 @@ export default {
   background-color: #333744;
   position: relative;
   overflow: visible;
+  transition: all 0.2s linear;
 }
 .left_menu_btn{
   position: absolute;
@@ -122,7 +143,7 @@ export default {
 }
 .el-main{
   background-color: #EAEDF1;
-  padding: 35px;
+  padding: 30px 35px;
 }
 .header_logo_box{
   display: flex;

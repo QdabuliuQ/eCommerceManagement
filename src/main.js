@@ -11,6 +11,7 @@ import './assets/css/iconfont.css'   // 字体图标
 import './assets/css/base.css'  // 基本全局样式
 
 Vue.prototype.$message = Message   // 挂载到全局中
+Vue.prototype.$EventBus = new Vue()  // 创建事件总线
 Vue.config.productionTip = false
 
 new Vue({
