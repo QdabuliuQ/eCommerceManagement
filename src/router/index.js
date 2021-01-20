@@ -16,7 +16,9 @@ const routes = [
     redirect: '/welcome',   // 路由重定向
     children:[
       { path: '/welcome', component: welcomeView },
-      { path: '/users', component: () => import ("components/private/User.vue")}
+      { path: '/users', component: () => import ("views/userView/User.vue")},
+      { path: '/rights', component: () => import ("views/powerView/Power.vue")},
+      { path: '/roles', component: () => import ("views/rolesView/Roles.vue") }
     ] 
   }
 ]

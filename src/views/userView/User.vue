@@ -39,11 +39,11 @@
         </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-tooltip @click="editBtn(scope.row)" :enterable="false" class="item" effect="dark" content="修改" placement="top">
-              <el-button size="small" type="primary" icon="el-icon-edit" circle></el-button>
+            <el-tooltip :enterable="false" class="item" effect="dark" content="修改" placement="top">
+              <el-button @click="editUser(scope.row)" size="small" type="primary" icon="el-icon-edit" circle></el-button>
             </el-tooltip>
             <el-tooltip :enterable="false" class="item" effect="dark" content="删除" placement="top">
-              <el-button size="small" type="danger" icon="el-icon-delete" circle></el-button>
+              <el-button @click="deleteUser(scope.row)" size="small" type="danger" icon="el-icon-delete" circle></el-button>
             </el-tooltip>
             <el-tooltip :enterable="false" class="item" effect="dark" content="设置权限" placement="top">
               <el-button size="small" type="warning" icon="el-icon-setting" circle></el-button>  
@@ -87,12 +87,39 @@
         <el-button type="primary" @click="addUser">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 修改用户对话框 -->
+    <el-dialog
+      title="提示"
+      :visible.sync="dialogEdit"
+      width="40%"
+      @close="closeDialogEdit">
+      <el-form ref="editform" :model="editForm" :rules="addFormRules" label-width="100px">
+        <el-form-item label="用户名称：">
+          <el-input :disabled="true" v-model="editForm.userName"></el-input>
+        </el-form-item>
+        <el-form-item prop="email" label="用户邮箱：">
+          <el-input v-model="editForm.email"></el-input>
+        </el-form-item>
+        <el-form-item prop="phone" label="用户手机：">
+          <el-input v-model="editForm.phone"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogEdit = false">取 消</el-button>
+        <el-button type="primary" @click="editUserDetail">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import BrandCrumb from "components/common/BrandCrumb"
-import { getUsers, setUserState, addUserDetail } from "network/users"
+import { 
+  getUsers, 
+  setUserState, 
+  addUserDetail,
+  editUserDetail,
+  deleteUserDetail } from "network/users"
 
 export default {
   name: 'User',
@@ -107,14 +134,25 @@ export default {
         size: 6,  // 页面数据数量
         query: '',  // 输入框的内容
       },
-      dialogVisible: true,  // 添加用户对话框
+      dialogVisible: false,  // 添加用户对话框
+      dialogEdit: false,  // 修改用户对话框
       addForm: {   // 用户表单数据
         userName: '',
         password: '',
         email: '',
         phone: ''
       },
-      addFormRules: {
+      editForm: {  // 修改表单数据
+        id: '',
+        userName: '',
+        email: '',
+        phone: ''
+      },
+      userInput: {   // 用户原数据
+        email: '',
+        phone: ''
+      },
+      addFormRules: {  // 匹配规则
         userName: [
           { required: true, message: '用户名称不能为空', trigger: 'blur' },
           { min: 2, max: 10, message: '用户名在2-10个字符直接', trigger: 'blur' }
@@ -131,8 +169,7 @@ export default {
           { required: true, message: '用户手机不能为空', trigger: 'blur' },
           { pattern: /^[1][3,4,5,7,8,9][0-9]{9}$/, message: '手机号码有误' }
         ],
-
-      }
+      },
     }
   },
 
@@ -201,6 +238,68 @@ export default {
           })
         }
       })
+    },
+
+    // 修改用户对话框
+    editUser(userDetail) {
+      this.dialogEdit = true
+      this.userInput.email = userDetail.email
+      this.userInput.phone = userDetail.mobile
+      this.editForm.id = userDetail.id
+      this.editForm.userName = userDetail.username
+      this.editForm.email = userDetail.email
+      this.editForm.phone = userDetail.mobile
+    },
+
+    // 修改用户信息
+    editUserDetail() {
+      this.$refs.editform.validate((result) => {
+        if (result) {   // 判断表单验证
+          // 判断是否进行了修改
+          if (this.userInput.email != this.editForm.email || this.userInput.phone != this.editForm.phone) {   
+            editUserDetail(this.editForm.id, this.editForm.email, this.editForm.phone).then(res => {
+              if (res.data.meta.status == 200) {         
+                this.getUsersDetail(this.queryInfo.pagenum, this.queryInfo.size)  // 刷新数据
+                this.$message.success("更新用户数据成功")
+                this.dialogEdit = false;  // 隐藏对话框
+                return
+              }
+              this.$message.error("更新用户数据失败")
+            })
+          }
+          this.dialogEdit = false;  // 隐藏对话框
+        }
+      })
+    },
+
+    // 监听对话框是否关闭
+    closeDialogEdit(){
+      this.$refs.editform.resetFields();  // 清空数据
+    },
+
+    // 删除用户数据
+    deleteUser(userDetail) {
+      this.$confirm('此操作将永久删除该用户信息, 是否继续?', '信息提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 发送请求
+        deleteUserDetail(userDetail.id).then(res => {
+          if (res.data.meta.status == 200) {  // 判断请求是否成功
+            this.getUsersDetail(this.queryInfo.pagenum, this.queryInfo.size)  // 刷新数据
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+            return
+          }
+          this.$message({
+            type: 'error',
+            message: '网络出错删除失败'
+          });
+        })
+      }).catch(() => {});
     }
    },
 

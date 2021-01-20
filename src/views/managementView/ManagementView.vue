@@ -123,14 +123,10 @@ export default {
   transition: all 0.2s linear;
 }
 .left_menu_btn{
-  position: absolute;
-  width: 20px;
-  height: 80px;
-  background-color: #333744;
+  width: 100%;
+  height: 30px;
+  background-color: #0000002d;
   z-index: 10;
-  top: 50%;
-  left: 100%;
-  transform: translateY(-50%);
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
   display: flex;
@@ -140,6 +136,8 @@ export default {
 }
 .left_menu_btn .iconfont{
   color: #fff;
+  position: relative;
+  left: -2px;
 }
 .el-main{
   background-color: #EAEDF1;

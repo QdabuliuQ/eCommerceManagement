@@ -1,9 +1,5 @@
 <template>
   <div id="login">
-    <!-- 背景图片 -->
-    <!-- <div class="bgcImg">
-      <img src="https://img.coolcr.cn/2021/01/16/e79a6126fa539.jpeg" alt="">
-    </div> -->
     <div class="login_container_box">
       <!-- logo -->
       <div class="login_logo">
