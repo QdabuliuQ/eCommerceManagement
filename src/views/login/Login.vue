@@ -87,7 +87,7 @@ export default {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background-color: rgb(105, 225, 247);
+    background-color: rgb(55, 95, 168);
   }
   .bgcImg{
     filter: blur(15px);
@@ -100,13 +100,14 @@ export default {
   .login_container_box{
     width: 500px;
     height: 320px;
-    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.747);
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+
   }
   .login_logo{
     width: 33%;

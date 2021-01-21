@@ -73,3 +73,35 @@
   window.sessionStorage.setItem("menuName", JSON.stringify(arrName))
   ```
   * 3.3、在之前实现该功能的时候使用过`EventBus事件总线`通过点击菜单，发送事件总线给对应的组件，但是在点击菜单后开始发送事件总线的时候，由于组件还未被创建出来，导致组件无法接收到数据从而出现BUG，所以才使用本地储存的方式。
+
+* 4、角色页面权限多层级的显示
+  * 4.1、显示效果如下：
+  ![Image text](https://img.coolcr.cn/2021/01/21/4bf04c77125a9.png)
+  * 4.2、通过 elementUi 中的栅格组件来完成，`<el-row>`作为每一级级权限的一行，以此类推，使用三层 v-for 嵌套遍历生成对应的结构
+
+* 5、用户权限树状图显示
+  * 5.1、显示效果如下
+  ![Image text](https://img.coolcr.cn/2021/01/21/dc6500d027b4d.png)
+  * 5.2、使用了 elementUi 中的 tree 组件，通过绑定 `node-key` 关键树节点的key，还有 `default-checked-keys` 以选中节点的 id 数组，当用户点击分配权限按钮的时候获取到所有三级权限 id，并 push 到数组中去
+  ```html
+  <el-tree 
+    :node-key="'id'"
+    :default-expand-all="true"
+    :default-checked-keys="selectList"
+    :data="rightsList"
+    show-checkbox
+    :props="defaultProps">
+  </el-tree>
+  ```
+  * 5.3、由于获取的数据比较复杂，想要获取最底层也就是三层权限的id最好通过`递归`的方式来获取，可以通过`for...of`三层循环嵌套的方式，判断 node 节点是否包含 children 子节点，如果不包含则说明是三级权限节点。如果包含说明还没有到指定的节点，通过 forEach 遍历，重新调用 getLeafKey 方法 
+  ```js
+  // 通过递归获取已有的权限节点id
+  getLeafKey(node, arr) {
+    if (!node.children) {  // 最后一个子节点是没有children节点  进入判断条件
+      return arr.push(node.id)  // 将id添加到数组中
+    }
+    // 通过遍历node的children的子节点 将 item 作为 getLeafKey 方法的node形成传递进去
+    // 进行下一步判断遍历
+    node.children.forEach( item => this.getLeafKey(item, arr))
+  },
+  ```

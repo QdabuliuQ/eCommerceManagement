@@ -7,3 +7,11 @@ export function getRolesList() {
     method: 'get'
   })
 }
+
+// 删除用户权限
+export function deleteUserPower(roleId, rightId) {
+  return request({
+    url: 'roles/'+roleId+'/rights/'+rightId,
+    method: 'delete'
+  })
+}
