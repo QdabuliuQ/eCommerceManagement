@@ -6,6 +6,8 @@ import ElementUI from 'element-ui'; // 导入element-ui包
 import 'element-ui/lib/theme-chalk/index.css'; // 导入相关样式
 import { Message } from 'element-ui'
 Vue.use(ElementUI); // 引用
+import TreeTable from "vue-table-with-tree-grid"
+Vue.component('tree-table', TreeTable)  // 全局注册组件
 
 import './assets/css/iconfont.css'   // 字体图标
 import './assets/css/base.css'  // 基本全局样式

@@ -2,7 +2,7 @@
   <div id="Roles">
     <brand-crumb :crumbList="crumbList"></brand-crumb>
     <el-card class="box-card">
-      <el-button type="primary">添加角色</el-button>
+      <el-button @click="addRole" type="primary">添加角色</el-button>
       <el-table border :data="tableData" stripe style="width: 100%">
         <el-table-column type="expand" width="60">
           <template slot-scope="scope">
@@ -48,8 +48,8 @@
         </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-button size="small" icon="el-icon-edit" type="primary">编辑</el-button>
-            <el-button size="small" icon="el-icon-delete" type="danger">删除</el-button>
+            <el-button @click="setRoleDetail(scope.row)" size="small" icon="el-icon-edit" type="primary">编辑</el-button>
+            <el-button @click="deleteRole(scope.row)" size="small" icon="el-icon-delete" type="danger">删除</el-button>
             <el-button @click="setUserPower(scope.row)" size="small" icon="el-icon-setting" type="warning">分配权限</el-button>
           </template>
         </el-table-column>
@@ -60,7 +60,8 @@
       width="40%"
       title="分配权限"
       :visible.sync="showUserPower"
-      append-to-body>
+      append-to-body
+      @close="closeUserPowerTree">
       <!-- 树状图 -->
       <el-tree 
         :node-key="'id'"
@@ -68,11 +69,49 @@
         :default-checked-keys="selectList"
         :data="rightsList"
         show-checkbox
-        :props="defaultProps">
+        :props="defaultProps"
+        ref="treeRights">
       </el-tree>
       <span slot="footer" class="dialog-footer">
         <el-button @click="showUserPower = false">取 消</el-button>
-        <el-button type="primary" @click="showUserPower = false">确 定</el-button>
+        <el-button type="primary" @click="allotRights">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!-- 添加角色对话框 -->
+    <el-dialog
+      title="添加角色"
+      :visible.sync="showDialogRole"
+      width="40%"
+      @close="closeAddRoleDialog">
+      <el-form ref="addRoleForm" :rules="addRoleRules" :model="addRoleDetail" label-width="100px">
+        <el-form-item prop="name" label="角色名称：">
+          <el-input v-model="addRoleDetail.name"></el-input>
+        </el-form-item>
+        <el-form-item label="角色描述：">
+          <el-input v-model="addRoleDetail.desc"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showDialogRole = false">取 消</el-button>
+        <el-button type="primary" @click="submitRole">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!-- 编辑角色对话框 -->
+    <el-dialog
+      title="编辑角色"
+      :visible.sync="setRoleDialog"
+      width="40%">
+      <el-form ref="settingRoleForm" :rules="addRoleRules" :model="RoleDetail" label-width="100px">
+        <el-form-item prop="name" label="角色名称：">
+          <el-input v-model="RoleDetail.name"></el-input>
+        </el-form-item>
+        <el-form-item label="角色描述：">
+          <el-input v-model="RoleDetail.desc"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="setRoleDialog = false">取 消</el-button>
+        <el-button type="primary" @click="settingRole">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -80,7 +119,13 @@
 
 <script>
 import BrandCrumb from "components/common/BrandCrumb";
-import {getRolesList, deleteUserPower} from "network/roles"
+import {
+  getRolesList, 
+  deleteUserPower, 
+  setUserPower, 
+  addRoleInformation,
+  deleteRoleInformation,
+  settingRoleInformation} from "network/roles"
 import {getPowerList} from "network/power"
 
 export default {
@@ -95,7 +140,28 @@ export default {
         children: 'children',
         label: 'authName'
       },
-      selectList: [142,143],  // 目前以拥有的权限id
+      selectList: [],  // 目前以拥有的权限id
+      roleId: '',  // 用户id
+      showDialogRole: false,  // 添加角色对话框
+      setRoleDialog: false,  // 编辑角色对话框
+      addRoleDetail: {  // 添加角色信息
+        name: '',
+        desc: ''
+      },
+      RoleDetail: {  // 编辑角色信息
+        name: '',
+        desc: ''
+      },
+      userInput: {
+        id: '',
+        name: '',
+        desc: ''
+      },
+      addRoleRules: {  // 命名规则
+        name: [
+          { required: true, message: '请输入角色名称', trigger: 'blur' },
+        ]
+      }
     };
   },
 
@@ -136,6 +202,7 @@ export default {
 
     // 分配权限
     setUserPower(selectList) {
+      this.roleId = selectList.id
       this.showUserPower = true
       getPowerList("tree").then(res => {  // 获取所有的权限列表数据
         this.rightsList = res.data.data
@@ -152,6 +219,123 @@ export default {
       // 进行下一步判断遍历
       node.children.forEach( item => this.getLeafKey(item, arr))
     },
+
+    // 关闭分配权限弹窗回调
+    closeUserPowerTree() {
+      this.selectList = []  // 清空数组
+    },
+
+    // 设置权限
+    allotRights() {
+      // 通过数组解构的方式
+      // getCheckedKeys 获取的是最底层的节点key
+      // getHalfCheckedKeys 获取的是除了最底层节点，其他的节点key
+      const keys = [...this.$refs.treeRights.getCheckedKeys(),...this.$refs.treeRights.getHalfCheckedKeys()]
+      setUserPower(this.roleId, keys.toString()).then(res => {
+        if (res.data.meta.status == 200) {
+          this.$message.success("修改用户权限成功")
+          this.showUserPower = false;  // 隐藏对话框
+          this.rolesList();  // 刷新数据
+        } else {
+          this.$message.error("修改用户权限失败")
+        }
+      })
+    },
+
+    // 添加角色
+    addRole() {
+      this.showDialogRole = true
+    },
+
+    // 提交角色
+    submitRole() {
+      this.$refs.addRoleForm.validate(result => {
+        if (result) {
+          addRoleInformation(this.addRoleDetail.name, this.addRoleDetail.desc).then(res => {
+            if (res.data.meta.status == 201) {
+              this.rolesList();  // 刷新数据
+              this.$message.success("添加角色成功");
+              this.showDialogRole = false
+              return
+            }
+            this.$message.error("添加角色失败，请重试")
+          })
+          return
+        }
+        this.$message.warning("角色名称不能为空")
+      })
+    },
+
+    // 删除角色
+    deleteRole(roleInfo) {
+      this.$confirm('此操作将永久删除角色信息, 是否继续?', '信息提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteRoleInformation(roleInfo.id).then(res => {  // 发送请求
+          if (res.data.meta.status == 200) {  // 判断状态码
+            this.rolesList();  // 刷新数据
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+          } else {
+            this.$message({
+              type: 'error',
+              message: '删除失败，请重试'
+            });
+          }
+        })  
+      }).catch();
+    },
+
+    // 编辑角色对话框
+    setRoleDetail(roleInfo) {
+      this.setRoleDialog = true
+      console.log(roleInfo);
+      this.RoleDetail.name = roleInfo.roleName
+      this.RoleDetail.desc = roleInfo.roleDesc
+      this.userInput.name = roleInfo.roleName
+      this.userInput.desc = roleInfo.roleDesc
+      this.userInput.id = roleInfo.id
+    },
+
+    // 编辑角色
+    settingRole() {
+      this.$refs.settingRoleForm.validate(result => {
+        if (result) {
+          // 判断内容是否进行修改
+          if (this.userInput.name != this.RoleDetail.name || this.userInput.desc != this.RoleDetail.desc) {
+            settingRoleInformation(this.userInput.id, this.RoleDetail.name, this.RoleDetail.desc).then(res =>{
+              console.log(res);
+              if (res.data.meta.status == 200) {
+                this.rolesList();  // 刷新数据
+                this.$message.success("编辑角色信息成功")
+                this.setRoleDialog = false  // 隐藏对话框
+                this.RoleDetail.name = ''
+                this.RoleDetail.desc = ''
+                this.userInput.name = ''
+                this.userInput.desc = ''
+                this.userInput.id = ''
+                return
+              } else {
+                this.$message.error("编辑角色信息失败")
+              }
+            })
+          }
+          this.setRoleDialog = false  // 隐藏对话框
+        } else {
+          this.$message.warning("角色名称不能为空")
+        }
+      })
+    },
+
+    // 关闭添加角色对话框
+    closeAddRoleDialog() {
+      this.addRoleDetail.name = ''
+      this.addRoleDetail.desc = ''
+    }
   },
 
   components: {
@@ -184,5 +368,8 @@ export default {
 }
 .topBor {
   border-top: 1px solid #f0f0f0;
+}
+.el-form-item__label{
+  text-align: left;
 }
 </style>

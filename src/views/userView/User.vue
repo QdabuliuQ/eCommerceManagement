@@ -24,7 +24,7 @@
         <el-table-column prop="username" label="姓名" width="180"></el-table-column>
         <el-table-column prop="mobile" label="手机号" width="180"></el-table-column>
         <el-table-column prop="email" label="电子邮箱"></el-table-column>
-        <el-table-column prop="role_name" label="用户权限"></el-table-column>
+        <el-table-column prop="role_name" label="用户角色"></el-table-column>
         <el-table-column label="用户状态">
           <!-- 作用域插槽 -->
           <template slot-scope="scope">
@@ -46,7 +46,7 @@
               <el-button @click="deleteUser(scope.row)" size="small" type="danger" icon="el-icon-delete" circle></el-button>
             </el-tooltip>
             <el-tooltip :enterable="false" class="item" effect="dark" content="设置权限" placement="top">
-              <el-button size="small" type="warning" icon="el-icon-setting" circle></el-button>  
+              <el-button @click="setPower(scope.row)" size="small" type="warning" icon="el-icon-setting" circle></el-button>  
             </el-tooltip>
           </template>        
         </el-table-column>
@@ -109,6 +109,29 @@
         <el-button type="primary" @click="editUserDetail">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 设置权限对话框 -->
+    <el-dialog
+      title="分配角色"
+      :visible.sync="dialogSet"
+      width="40%"
+      @close="closeDialogSet">
+      <div class="dialoItem userName">用户名称：<span>{{userInfo.username}}</span></div>
+      <div class="dialoItem userRole">当前角色：<span>{{userInfo.role_name}}</span></div>
+      <div class="">分配角色：
+        <el-select v-model="selectValue" placeholder="请选择">
+          <el-option
+            v-for="item in options"
+            :key="item.id"
+            :label="item.roleName"
+            :value="item.id">
+          </el-option>
+        </el-select>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogSet = false">取 消</el-button>
+        <el-button type="primary" @click="saveUserRole">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -120,6 +143,7 @@ import {
   addUserDetail,
   editUserDetail,
   deleteUserDetail } from "network/users"
+import {getRolesList, setUserRole} from "network/roles"
 
 export default {
   name: 'User',
@@ -136,6 +160,10 @@ export default {
       },
       dialogVisible: false,  // 添加用户对话框
       dialogEdit: false,  // 修改用户对话框
+      dialogSet: false,  // 设置权限对话框
+      userInfo: {},  // 用户信息
+      selectValue: '',  // 下拉列表值
+      options: [],  // 下拉列表
       addForm: {   // 用户表单数据
         userName: '',
         password: '',
@@ -300,6 +328,43 @@ export default {
           });
         })
       }).catch(() => {});
+    },
+
+    // 设置用户权限
+    setPower(userInfo) {
+      this.dialogSet = true;  // 显示对话框
+      this.userInfo = userInfo;
+      getRolesList().then(res => {
+        this.options = res.data.data.map( function(item,index,ary){
+          return {
+            id: item.id, 
+            roleName:item.roleName
+          }
+        })
+      })
+    },
+
+    // 保存用户角色
+    saveUserRole() {
+      if (!this.selectValue) {
+        return this.$message.error("请选择角色");
+      }
+      setUserRole(this.userInfo.id, this.selectValue).then(res => {
+        console.log(res);
+        if (res.data.meta.status == 200) {
+          this.getUsersDetail(this.queryInfo.pagenum, this.queryInfo.size)
+          this.$message.success("设置用户角色成功");
+          this.dialogSet = false  // 隐藏对话框
+        } else {
+          this.$message.error("设置角色失败，请重试")
+        }
+      })
+    },
+
+    // 关闭对话框
+    closeDialogSet() {
+      this.selectValue = ''
+      this.userInfo = {}
     }
    },
 
@@ -334,5 +399,15 @@ export default {
 }
 .el-dialog__footer{
   padding-top: 0 !important;
+}
+.dialoItem{
+  height: 40px;
+  display: flex;
+  align-items: center;
+  color: rgb(119, 119, 119);
+}
+.dialoItem span {
+  font-weight: 550;
+  color: rgb(95, 95, 95);
 }
 </style>
