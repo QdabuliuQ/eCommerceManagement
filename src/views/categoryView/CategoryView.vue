@@ -3,6 +3,7 @@
     <brand-crumb :crumbList="crumbList"></brand-crumb>
     <el-card>
       <el-button @click="showAddCate" type="primary">添加分类</el-button>
+      <!-- 表格数据 -->
       <tree-table
       style="margin-top: 20px; font-size: 13px"
       :selection-type="false"
@@ -21,8 +22,8 @@
           <el-tag size="small" type="warning" v-else-if="scope.row.cat_level == 2">三级</el-tag>
         </template>
         <template slot="setting" slot-scope="scope">
-          <el-button size="mini" icon="el-icon-edit" type="primary">编辑</el-button>
-          <el-button size="mini" icon="el-icon-delete" type="warning">删除</el-button>
+          <el-button @click="editCateDetail(scope.row)" size="mini" icon="el-icon-edit" type="primary">编辑</el-button>
+          <el-button @click="deleteCateDetail(scope.row)" size="mini" icon="el-icon-delete" type="warning">删除</el-button>
         </template>
       </tree-table>
       <el-pagination
@@ -35,6 +36,7 @@
         :total="total">
       </el-pagination>
     </el-card>
+    <!-- 添加分类对话框 -->
     <el-dialog
       title="添加分类"
       :visible.sync="addCateDialog"
@@ -57,12 +59,33 @@
         <el-button type="primary" @click="addCateDetail">确 定</el-button>
       </span>
     </el-dialog>
+    <el-dialog
+      title="编辑信息"
+      :visible.sync="editCateDialog"
+      width="40%">
+      <el-form :model="editForm" :rules="addCateRules" ref="editRuleForm" label-width="100px" class="demo-ruleForm">
+        <el-form-item label="原名称：">
+          <el-input disabled v-model="editForm.oldName"></el-input>
+        </el-form-item>
+        <el-form-item label="新名称：" prop="newName">
+          <el-input v-model="editForm.newName"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editCateDialog = false">取 消</el-button>
+        <el-button type="primary" @click="submitEditCate">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import BrandCrumb from "components/common/BrandCrumb";
-import {getGoodsCategory, postAddCateDetail} from "network/category"
+import {
+  getGoodsCategory, 
+  postAddCateDetail,
+  EditCateDetail,
+  DeleteCateDetail} from "network/category"
 
 export default {
   name: "CategoryView",
@@ -75,21 +98,30 @@ data() {
         pagesize: 6
       },
       total: 0,  // 总条数
-      columns: [
+      columns: [   // 每一行的数据
         {label: '名称', prop: 'cat_name'},
         {label: '是否有货', prop:'cat_deleted', type: 'template', template: 'isOk'},
         {label: '货物等级', prop:'cat_level', type: 'template', template: 'rank'},
         {label: '操作', type: 'template', template: 'setting'}
       ],
       addCateDialog: false,  // 添加分类对话框
-      cateForm: {
+      editCateDialog: false,  // 编辑分类对话框
+      cateForm: {  // 商品表单数据
         cat_name: '',
         cat_pid: 0,
         cat_level: 0
       },
+      editForm: {  // 添加表单数据
+        oldName: '',
+        newName: '', 
+        id: '',
+      },
       addCateRules: {
         cat_name: [
           {required: true, message: '请输入分类名称', trigger: 'blur'}
+        ],
+        newName: [
+          {required: true, message: '请输入分类商品名称', trigger: 'blur'}
         ]
       },
       cateValue: [],  // 以选中数组
@@ -171,6 +203,67 @@ data() {
       this.cateForm.cat_name = ""
       this.cateForm.cat_pid = 0;  // 重置数据
       this.cateForm.cat_level = 0;  // 重置数据
+      this.cateValue = [];  // 重置数组
+    },
+
+    // 编辑商品数据
+    editCateDetail(cateDetail) {
+      this.editCateDialog = true
+      this.editForm.oldName = cateDetail.cat_name
+      this.editForm.id = cateDetail.cat_id
+    },
+
+    // 提交编辑数据
+    submitEditCate() {
+      this.$refs.editRuleForm.validate(result => {  // 表单验证
+        if (result) {  // 判断结果
+          if (this.editForm.oldName != this.editForm.newName) {  // 判断是否需要发起请求
+            EditCateDetail(this.editForm.id, this.editForm.newName).then(res => {
+              if (res.data.meta.status == 200) {  // 判断结果
+                this.$message.success("修改信息成功")
+                this.goodsCategory();  // 刷新数据
+                this.editCateDialog = false;  // 关闭弹窗
+                this.editForm.oldName = '';  // 重置数据
+                this.editForm.newName = '';
+                this.editForm.id = '';
+              } else {
+                this.$message.error("修改信息失败")
+              }
+            })
+          } else {
+            this.editCateDialog = false;  // 关闭弹窗
+            this.editForm.oldName = '';  // 重置数据
+            this.editForm.newName = '';
+            this.editForm.id = '';
+          }
+        } else {
+          this.$message.error("商品名称不能为空")
+        }
+      })
+    },
+
+    // 删除分类
+    deleteCateDetail(cateInfo) {
+      this.$confirm('此操作将永久删除该分类信息, 是否继续?', '信息提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        DeleteCateDetail(cateInfo.cat_id).then(res => {
+          if (res.data.meta.status == 200) {
+            this.goodsCategory();  // 刷新数据
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+          } else {
+            this.$message({
+              type: 'error',
+              message: '删除失败'
+            });
+          }
+        })
+      }).catch();
     }
   },
   components: {
@@ -202,5 +295,8 @@ data() {
 }
 .el-cascader{
   width: 100%;
+}
+.el-input {
+  width: 90%;
 }
 </style>
