@@ -19,7 +19,8 @@ const routes = [
       { path: '/users', component: () => import ("views/userView/User.vue")},
       { path: '/rights', component: () => import ("views/powerView/Power.vue")},
       { path: '/roles', component: () => import ("views/rolesView/Roles.vue") },
-      { path: '/categories', component: () => import ("views/categoryView/CategoryView.vue") }
+      { path: '/categories', component: () => import ("views/categoryView/CategoryView.vue") },
+      { path: '/params', component: () => import ("views/paramsView/ParamsView.vue") }
     ] 
   }
 ]

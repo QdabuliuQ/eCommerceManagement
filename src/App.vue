@@ -20,4 +20,8 @@ export default {
     height: 100vh;
     min-width: 1366px;
   }
+  .el-alert__content{
+    display: flex  !important;
+    align-items: center  !important;
+  }
 </style>

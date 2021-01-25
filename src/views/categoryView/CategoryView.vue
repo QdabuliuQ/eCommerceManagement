@@ -59,6 +59,7 @@
         <el-button type="primary" @click="addCateDetail">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 编辑信息对话框 -->
     <el-dialog
       title="编辑信息"
       :visible.sync="editCateDialog"
@@ -89,7 +90,7 @@ import {
 
 export default {
   name: "CategoryView",
-data() {
+  data() {
     return {
       crumbList: [],
       cateList: [],  // 分类数据
@@ -297,6 +298,9 @@ data() {
   width: 100%;
 }
 .el-input {
+  width: 90%;
+}
+.el-cascader{
   width: 90%;
 }
 </style>
