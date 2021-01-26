@@ -15,6 +15,16 @@ import './assets/css/base.css'  // 基本全局样式
 Vue.prototype.$message = Message   // 挂载到全局中
 Vue.prototype.$EventBus = new Vue()  // 创建事件总线
 Vue.config.productionTip = false
+Vue.filter("dataFormat", function(originVal) {  // 定义全局过滤器
+  const dt = new Date(originVal);  // 创建时间对象
+  const y = dt.getFullYear();  // 获取年份
+  const m = (dt.getMonth() + 1 + '').padStart(2, '0');  // 获取月份
+  const d = (dt.getDate()+ '').padStart(2, '0');  // 获取日期
+  const h = (dt.getHours() +'').padStart(2, '0'); 
+  const mi = (dt.getMinutes() +'').padStart(2, '0');
+  const s = (dt.getSeconds() +'').padStart(2, '0');
+  return `${y}-${m}-${d} ${h}:${mi}:${s}`
+})  
 
 new Vue({
   router,

@@ -6,7 +6,7 @@
 * Vuex：管理公共组件状态量
 * Vue-router：管理项目页面应用路由
 * Axios：用于发送网络请求
-* Webpack：自动化构建工具，主要配置vue-cli脚手架提供。
+* Vue-CLI：自动化构建工具。
 * ES6：采用ES6语法
 
 #### 项目要点：
@@ -103,5 +103,59 @@
     // 通过遍历node的children的子节点 将 item 作为 getLeafKey 方法的node形成传递进去
     // 进行下一步判断遍历
     node.children.forEach( item => this.getLeafKey(item, arr))
+  },
+  ```
+
+* 6、分类参数页面开发出现的问题
+  * 6.1、使用 elementUi 的`el-tag`组件时候，需要点击tag出现输入框，并在输入框失去焦点后发起AJAX请求，添加数据。在`el-input`中不同绑定同一个v-model属性，不然在输入的时候，遍历出来的所有输入框都会绑定到一个属性值上。可以在请求数据的时候，在获取到的数据中通过`for...of`循环添加一个自定义属性。
+  ```js
+  // 获取分类参数
+    getParamsData() {
+    getCateParams(this.selectKeys[this.selectKeys.length - 1],this.navItem.then((res) => {
+      for (const item of res.data.data) {  // 遍历数据
+        if (item.attr_vals != "") {
+          // 判断属性值是否为空
+          // 遍历属性
+          item.attr_vals = item.attr_vals.split(","); // 字符串切割
+        } else {
+          item.attr_vals = [];
+        }
+      }
+      if (this.navItem == "many") {
+        for (const item of res.data.data) {
+          item.inputValue = "";  // 手动添加inputValue属性绑定给每一个input
+          item.inputVisible = false;
+        }
+        this.activeParamsData = res.data.data;
+      } else {
+        for (const item of res.data.data) {
+          item.inputValue = "";  // 手动添加inputValue属性绑定给每一个input
+          item.inputVisible = false;
+        }
+        this.staticParamsData = res.data.data;
+      }
+    });
+  },
+  ```
+  * 6.2、在点击添加按钮后，必须调用input的focus方法自动获取焦点。在v-for中遍历的时候，必须给每一个input绑定不同的ref属性，如果一个都绑定了同一个ref属性的使用，当一个输入框调用了focus方法的时候，其他输入框也会同步调用。所以在遍历的时候通过拼接的方式生成不同的ref属性值
+  ```html
+  <el-input
+    class="input-new-tag"
+    v-if="scope.row.inputVisible"
+    v-model="scope.row.inputValue"
+    :ref="'saveTagInput' + scope.row.attr_id"
+    size="small"
+    @blur="handleInputConfirm(scope.row)"
+  >
+  ```
+  * 6.3、通过 `this.$refs[属性值]` 的方式进行获取
+  ```js
+  // 显示输入框
+  showInput(refsIndex, rowInfo) {
+    rowInfo.inputVisible = true; // 隐藏按钮
+    this.$nextTick(() => {
+      // dom节点挂载完成回调函数
+      this.$refs[refsIndex].$refs.input.focus(); // 自动获取焦点
+    });
   },
   ```

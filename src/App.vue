@@ -24,4 +24,7 @@ export default {
     display: flex  !important;
     align-items: center  !important;
   }
+  .el-step__title{
+    font-size: 13px !important;
+  }
 </style>

@@ -20,7 +20,9 @@ const routes = [
       { path: '/rights', component: () => import ("views/powerView/Power.vue")},
       { path: '/roles', component: () => import ("views/rolesView/Roles.vue") },
       { path: '/categories', component: () => import ("views/categoryView/CategoryView.vue") },
-      { path: '/params', component: () => import ("views/paramsView/ParamsView.vue") }
+      { path: '/params', component: () => import ("views/paramsView/ParamsView.vue") },
+      { path: '/goods', component: () => import ("views/goodsView/GoodsView.vue") },
+      { path: '/addGoods', component: () => import ("views/addGoodsView/AddGoodsView.vue") }
     ] 
   }
 ]

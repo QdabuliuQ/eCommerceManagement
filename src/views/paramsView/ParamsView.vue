@@ -36,23 +36,24 @@
               <template slot-scope="scope">
                 <div
                   style="display: inline; margin-left: 15px"
-                  v-for="tag in scope.row.attr_vals"
-                  :key="tag">
+                  v-for="(tag, index) in scope.row.attr_vals"
+                  :key="index"
+                >
                   <el-tag
                     v-if="tag != ''"
                     closable
-                    :disable-transitions="false">
+                    :disable-transitions="false"
+                  >
                     {{ tag }}
                   </el-tag>
                 </div>
                 <div style="display: inline; margin-left: 15px">
                   <el-input
                     class="input-new-tag"
-                    v-if="inputVisible"
-                    v-model="inputValue"
-                    ref="saveTagInput"
+                    v-if="scope.row.inputVisible"
+                    v-model="scope.row.inputValue"
+                    :ref="'saveTagInput' + scope.row.attr_id"
                     size="small"
-                    @keyup.enter.native="handleInputConfirm(scope.row)"
                     @blur="handleInputConfirm(scope.row)"
                   >
                   </el-input>
@@ -60,7 +61,9 @@
                     v-else
                     class="button-new-tag"
                     size="small"
-                    @click="showInput"
+                    @click="
+                      showInput('saveTagInput' + scope.row.attr_id, scope.row)
+                    "
                     >添加参数</el-button
                   >
                 </div>
@@ -75,7 +78,11 @@
                 <el-button size="mini" type="primary" icon="el-icon-edit"
                   >编辑</el-button
                 >
-                <el-button @click="deleteParams(scope.row)" size="mini" type="danger" icon="el-icon-delete"
+                <el-button
+                  @click="deleteParams(scope.row)"
+                  size="mini"
+                  type="danger"
+                  icon="el-icon-delete"
                   >删除</el-button
                 >
               </template>
@@ -96,8 +103,8 @@
               <template slot-scope="scope">
                 <div
                   style="display: inline; margin-left: 15px"
-                  v-for="tag in scope.row.attr_vals"
-                  :key="tag"
+                  v-for="(tag, index) in scope.row.attr_vals"
+                  :key="index"
                 >
                   <el-tag
                     v-if="tag != ''"
@@ -110,11 +117,10 @@
                 <div style="display: inline; margin-left: 15px">
                   <el-input
                     class="input-new-tag"
-                    v-if="inputVisible"
-                    v-model="inputValue"
-                    ref="saveTagInput"
+                    v-if="scope.row.inputVisible"
+                    v-model="scope.row.inputValue"
+                    :ref="'saveTagInput' + scope.row.attr_id"
                     size="small"
-                    @keyup.enter.native="handleInputConfirm(scope.row)"
                     @blur="handleInputConfirm(scope.row)"
                   >
                   </el-input>
@@ -122,7 +128,9 @@
                     v-else
                     class="button-new-tag"
                     size="small"
-                    @click="showInput"
+                    @click="
+                      showInput('saveTagInput' + scope.row.attr_id, scope.row)
+                    "
                     >添加属性</el-button
                   >
                 </div>
@@ -137,7 +145,11 @@
                 <el-button size="mini" type="primary" icon="el-icon-edit"
                   >编辑</el-button
                 >
-                <el-button @click="deleteParams(scope.row)" size="mini" type="danger" icon="el-icon-delete"
+                <el-button
+                  @click="deleteParams(scope.row)"
+                  size="mini"
+                  type="danger"
+                  icon="el-icon-delete"
                   >删除</el-button
                 >
               </template>
@@ -174,11 +186,12 @@
 <script>
 import BrandCrumb from "components/common/BrandCrumb";
 import { getGoodsCategory } from "network/category";
-import { 
-  getCateParams, 
-  addCateParams, 
-  deleteCateParams, 
-  addCateParamsTag } from "network/params";
+import {
+  getCateParams,
+  addCateParams,
+  deleteCateParams,
+  addCateParamsTag,
+} from "network/params";
 
 export default {
   name: "ParamsView",
@@ -237,12 +250,14 @@ export default {
 
     // 导航栏切换
     handleClick(tab) {
-      if (this.selectKeys.length == 3) {
-        if (tab.paneName == "activeParams") {
-          this.navItem = "many";
+      if (tab.paneName == "activeParams") {
+        this.navItem = "many";
+        if (this.selectKeys.length == 3) {
           this.getParamsData(); // 获取数据
-        } else {
-          this.navItem = "only";
+        }
+      } else {
+        this.navItem = "only";
+        if (this.selectKeys.length == 3) {
           this.getParamsData(); // 获取数据
         }
       }
@@ -255,16 +270,25 @@ export default {
         this.navItem
       ).then((res) => {
         for (const item of res.data.data) {
-          if (item.attr_vals != "") {  // 判断属性值是否为空
+          if (item.attr_vals != "") {
+            // 判断属性值是否为空
             // 遍历属性
             item.attr_vals = item.attr_vals.split(","); // 字符串切割
           } else {
-            item.attr_vals = []
+            item.attr_vals = [];
           }
         }
         if (this.navItem == "many") {
+          for (const item of res.data.data) {
+            item.inputValue = "";
+            item.inputVisible = false;
+          }
           this.activeParamsData = res.data.data;
         } else {
+          for (const item of res.data.data) {
+            item.inputValue = "";
+            item.inputVisible = false;
+          }
           this.staticParamsData = res.data.data;
         }
       });
@@ -272,30 +296,33 @@ export default {
 
     // 隐藏输入框  添加tag
     handleInputConfirm(paramsInfo) {
-      if (this.inputValue.trim().length != 0) {  // 去除前后空格 判断输入内容是否为空
-        paramsInfo.attr_vals.push(this.inputValue.trim())
+      if (paramsInfo.inputValue.trim().length != 0) {
+        // 去除前后空格 判断输入内容是否为空
+        paramsInfo.attr_vals.push(paramsInfo.inputValue.trim());
         addCateParamsTag(
-          paramsInfo.cat_id, 
+          paramsInfo.cat_id,
           paramsInfo.attr_id,
           paramsInfo.attr_name,
           this.navItem,
-          paramsInfo.attr_vals.toString()).then(res => {
-            if (res.data.meta.status == 200) {
-              return this.$message.success("添加商品属性成功")
-            } 
-            this.$message.success("添加商品属性失败")
-        })
+          paramsInfo.attr_vals.toString()
+        ).then((res) => {
+          if (res.data.meta.status == 200) {
+            paramsInfo.inputValue = ""; // 清空输入框
+            return this.$message.success("添加商品属性成功");
+          }
+          this.$message.success("添加商品属性失败");
+        });
       }
-      this.inputValue = '';  // 清空输入框
-      this.inputVisible = false;
+      paramsInfo.inputVisible = false;
     },
 
     // 显示输入框
-    showInput() {
-      this.inputVisible = true;  // 隐藏按钮
-      this.$nextTick(() => {  // dom节点挂载完成回调函数
-        this.$refs.saveTagInput.$refs.input.focus()  // 自动获取焦点
-      })
+    showInput(refsIndex, rowInfo) {
+      rowInfo.inputVisible = true; // 隐藏按钮
+      this.$nextTick(() => {
+        // dom节点挂载完成回调函数
+        this.$refs[refsIndex].$refs.input.focus(); // 自动获取焦点
+      });
     },
 
     // 添加参数/属性
@@ -303,9 +330,9 @@ export default {
       this.$refs.paramsForm.validate((result) => {
         if (result) {
           if (this.navItem == "many") {
-            this.sendAddCateParams()
+            this.sendAddCateParams();
           } else {
-            this.sendAddCateParams()
+            this.sendAddCateParams();
           }
         } else {
           this.$message.error(this.titleText + "不能为空");
@@ -333,27 +360,35 @@ export default {
 
     // 删除属性/参数
     deleteParams(paramsInfo) {
-      this.$confirm('此操作将永久删除'+this.titleText+', 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        deleteCateParams(paramsInfo.cat_id, paramsInfo.attr_id).then(res => {
-          if (res.data.meta.status == 200) {
-            this.getParamsData();  // 刷新数据
-            this.$message({
-              type: 'success',
-              message: '删除成功!'
-            });
-          } else {
-            this.$message({
-              type: 'errpr',
-              message: '删除失败'
-            });
-          }
+      this.$confirm(
+        "此操作将永久删除" + this.titleText + ", 是否继续?",
+        "提示",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+        }
+      )
+        .then(() => {
+          deleteCateParams(paramsInfo.cat_id, paramsInfo.attr_id).then(
+            (res) => {
+              if (res.data.meta.status == 200) {
+                this.getParamsData(); // 刷新数据
+                this.$message({
+                  type: "success",
+                  message: "删除成功!",
+                });
+              } else {
+                this.$message({
+                  type: "errpr",
+                  message: "删除失败",
+                });
+              }
+            }
+          );
         })
-      }).catch();
-    }
+        .catch();
+    },
   },
   computed: {
     titleText() {
