@@ -4,7 +4,7 @@
     <el-card class="box-card">
       <el-alert
         :closable="false"
-        title="添加商品信息"
+        :title="title"
         type="info"
         center
         show-icon
@@ -36,7 +36,6 @@
           tab-position="left"
           v-model="activeIndex"
           :before-leave="beforeTabLeave"
-          @tab-click="tabClickEvent"
         >
           <el-tab-pane name="0" label="基本信息">
             <el-form-item label="商品名称：" prop="goods_name">
@@ -51,7 +50,7 @@
             <el-form-item label="商品数量：" prop="goods_number">
               <el-input type="number" v-model="addForm.goods_number"></el-input>
             </el-form-item>
-            <el-form-item label="商品数量：" prop="goods_cate">
+            <el-form-item label="商品分类：" prop="goods_cate">
               <!-- 联动下拉列表 -->
               <el-cascader
                 v-model="addForm.goods_cate"
@@ -61,20 +60,50 @@
             </el-form-item>
           </el-tab-pane>
           <el-tab-pane name="1" label="商品参数">
+            <!-- 复选框组 -->
             <div v-for="(item, index) in checkboxGroup" :key="index" class="checkbox_list_area">
               <div class="checkbox_list_area_title">商品参数名称：{{item.attr_name}}</div>
               <el-checkbox-group v-model="item.attr_vals" size="small">
-                <el-checkbox  v-for="(tagItem, index2) in item.attr_vals" :key="index2"  :label="tagItem" border></el-checkbox>
+                <el-checkbox v-for="(tagItem, index2) in item.attr_vals" :key="index2"  :label="tagItem" border></el-checkbox>
               </el-checkbox-group>
             </div>
-            
           </el-tab-pane>
-          <el-tab-pane name="2" label="商品属性"></el-tab-pane>
-          <el-tab-pane name="3" label="商品图片"></el-tab-pane>
-          <el-tab-pane name="4" label="商品内容"></el-tab-pane>
+          <el-tab-pane name="2" label="商品属性">
+            <el-form-item v-for="(item, index) in onlyDate" :key="index" :label="item.attr_name">
+              <el-input v-model="item.attr_vals"></el-input>
+            </el-form-item>
+          </el-tab-pane>
+          <el-tab-pane name="3" label="商品图片">
+            <el-upload
+              class="upload-demo"
+              action="https://www.liulongbin.top:8888/api/private/v1/upload"
+              :on-preview="handlePreview"
+              :on-remove="handleRemove"
+              :on-success="successRespon"
+              :headers="headerObj"
+              list-type="picture">
+              <el-button size="small" type="primary">点击上传</el-button>
+              <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
+            </el-upload>
+          </el-tab-pane>
+          <el-tab-pane name="4" label="商品内容">
+            <!-- 富文本编辑器 -->
+            <quill-editor
+              ref="myQuillEditor"
+              v-model="addForm.goods_introduce"
+            />
+            <el-button @click="submitGoodsDetail" class="submit" type="primary">提交商品</el-button>
+          </el-tab-pane>
         </el-tabs>
       </el-form>
     </el-card>
+    <!-- 图片预览提示框 -->
+    <el-dialog
+      title="图片预览"
+      :visible.sync="picVisible"
+      width="50%">
+      <img style="width: 100%; height: 100%" :src="picUrl" alt="">
+    </el-dialog>
   </div>
 </template>
 
@@ -82,23 +111,24 @@
 import BrandCrumb from "components/common/BrandCrumb";
 import {getGoodsCategory} from "network/category"
 import {getCateParams} from "network/params"
+import {addGoodsDetail, getGoodsDetail, editGoodsDetail} from "network/goods"
+import _ from "lodash"  // 引入依赖
 
 export default {
   name: "AddGoodsView",
   data() {
     return {
-      crumbList: ["商品管理", "添加商品"],
+      crumbList: [],
       activeIndex: '0', // 步骤激活索引
       addForm: {  // 添加商品表单
-        // goods_name: '',
-        // goods_price: null,
-        // goods_weight: null,
-        // goods_number: null,
-        goods_name: '',
+        goods_name: '1',
         goods_price: 1,
         goods_weight: 1,
         goods_number: 1,
-        goods_cate: []
+        goods_cate: [],
+        pics: [],
+        goods_introduce: '',
+        attrs: [],
       },
       addFormRules: {
         goods_name: [
@@ -124,11 +154,19 @@ export default {
       },
       parentCateList: [],  // 商品分类数据
       checkboxGroup: [],  // 参数多选框
+      onlyDate: [],  // 商品参数
+      headerObj: {  // 图片上传请求
+        Authorization: window.sessionStorage.getItem("token")
+      },
+      picVisible: false,  // 图片预览
+      picUrl: '',  // 预览图片路径
+      isAddGoods: true,  // 是否添加商品
+      title: '添加商品信息',
     };
   },
   methods: {
     // 判断tab切换
-    beforeTabLeave(activeName, oldActiveName) {
+    beforeTabLeave() {
       let flag = false;
       this.$refs.addGoodsForm.validate(res => {
         if (res) {
@@ -142,17 +180,7 @@ export default {
     // 选择器发送改变回调函数
     cateListChange() {
       if (this.addForm.goods_cate.length == 3) {  // 必须选中三级
-        
-      } else {
-        this.addForm.goods_cate = []
-      }
-    },
-
-    // tab栏点击事件
-    tabClickEvent() {
-      if (this.activeIndex == 1) {  // 进入了商品参数页面
         getCateParams(this.addForm.goods_cate[this.addForm.goods_cate.length - 1], 'many').then(res => {
-          console.log(res);
           for (const item of res.data.data) {
             if (item.attr_vals != "") {
             // 判断属性值是否为空
@@ -163,6 +191,78 @@ export default {
             }
           }
           this.checkboxGroup = res.data.data
+          // 参数请求
+          getCateParams(this.addForm.goods_cate[this.addForm.goods_cate.length - 1], 'only').then(res => {
+            this.onlyDate = res.data.data
+          })
+        })
+      } else {
+        this.addForm.goods_cate = []
+      }
+    },  
+
+    // 图片预览事件
+    handlePreview(res) {
+      this.picVisible = true
+      this.picUrl = res.response.data.url
+    },
+
+    // 图片移除事件
+    handleRemove(res) {
+      const index = this.addForm.pics.findIndex(item => item.pic == res.response.data.tmp_path);
+      this.addForm.pics.splice(index, 1)
+    },
+
+    // 上传图片成功回调
+    successRespon(res) {
+      const pirObj = { pic: res.data.tmp_path }
+      this.addForm.pics.push(pirObj)
+    },
+
+    // 提交商品信息
+    submitGoodsDetail() {
+      const formInfo = _.cloneDeep(this.addForm)  // 深拷贝
+      formInfo.goods_cat = formInfo.goods_cate.toString()
+      
+      this.checkboxGroup.forEach(item => {
+        formInfo.attrs.push({
+          attr_id: item.attr_id,
+          attr_value: item.attr_vals.join(',')
+        })
+      })
+      this.onlyDate.forEach(item => {
+        formInfo.attrs.push({
+          attr_id: item.attr_id,
+          attr_value: item.attr_vals
+        })
+      })
+      if (this.$route.params.id == 0) {
+        addGoodsDetail(formInfo).then(res =>{
+          if (res.data.meta.status == 201) {
+            this.$message.success("添加商品成功")
+            this.$router.push("/goods")
+          } else {
+            this.$message.error("添加商品失败")
+          }
+        })
+      } else {
+        editGoodsDetail(
+          this.$route.params.id,
+          formInfo.goods_name,
+          formInfo.goods_price,
+          formInfo.goods_number,
+          formInfo.goods_weight,
+          formInfo.goods_introduce,
+          formInfo.pics,
+          formInfo.attrs,
+          formInfo.goods_cat
+        ).then(res => {
+          if (res.data.meta.status == 200) {
+            this.$message.success("修改商品成功")
+            this.$router.push("/goods")
+          } else {
+            this.$message.error("修改商品失败")
+          }
         })
       }
     }
@@ -174,9 +274,24 @@ export default {
 
   // 页面渲染完成生命周期函数
   created() {
-    getGoodsCategory().then(res => {
+    this.crumbList = JSON.parse(window.sessionStorage.getItem("menuName"))
+    getGoodsCategory().then(res => {  // 分类请求
       this.parentCateList = res.data.data
     })
+
+    if (this.$route.params.id != 0) {  // 如果不是添加商品
+      this.title = "编辑商品信息"
+      getGoodsDetail(this.$route.params.id).then(res => {
+        this.addForm.goods_name = res.data.data.goods_name
+        this.addForm.goods_price = res.data.data.goods_price
+        this.addForm.goods_weight = res.data.data.goods_weight
+        this.addForm.goods_number = res.data.data.goods_number
+        this.addForm.goods_introduce = res.data.data.goods_introduce
+      })
+      this.isAddGoods = false  // 隐藏商品属性选项
+    } else {
+      this.title = "添加商品信息"
+    }
   },
 };
 </script>
@@ -192,7 +307,9 @@ export default {
   margin-left: 10px;
 }
 .el-checkbox{
-  margin-right: 5px;
+  margin-left: 0px;
+  margin-right: 15px;
+  margin-bottom: 10px;
   width: auto;
   /* float: left; */
 }
@@ -200,9 +317,11 @@ export default {
   margin-bottom: 20px;
 }
 .checkbox_list_area_title{
-  /* width: 100%; */
   font-size: 13px;
   margin-bottom: 10px;
   color: rgb(143, 143, 143);
+}
+.submit{
+  margin-top: 15px;
 }
 </style>

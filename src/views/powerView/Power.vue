@@ -40,7 +40,6 @@ export default {
   created () {
     this.crumbList = JSON.parse(window.sessionStorage.getItem("menuName"))   // 获取储存数据
     getPowerList("list").then(res => {
-      console.log(res);
       this.tableData = res.data.data
     })
   },

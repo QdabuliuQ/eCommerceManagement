@@ -3,7 +3,8 @@ import axios from "axios";    // 引入axios
 export function request(config) {
   const instance = axios.create({
     // 根路径
-    baseURL: 'https://www.liulongbin.top:8888/api/private/v1/',
+    // baseURL: 'https://www.liulongbin.top:8888/api/private/v1/',
+    baseURL: 'http://www.ysqorz.top:8888/api/private/v1/',
     // 请求时间
     timeout: 5000,
   })
@@ -21,4 +22,16 @@ export function request(config) {
   // 返回 实例对象
   return instance(config)
 
+}
+
+export function request2(config) {
+  const instance = axios.create({
+    baseURL: 'https://www.liulongbin.top:8888/api/private/v1/',
+    timeout: 5000,
+  })
+  instance.interceptors.request.use(config => {
+    config.headers.Authorization = window.sessionStorage.getItem("token")  // 将token放入请求头中
+    return config
+  })
+  return instance(config)
 }

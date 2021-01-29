@@ -21,8 +21,13 @@ const routes = [
       { path: '/roles', component: () => import ("views/rolesView/Roles.vue") },
       { path: '/categories', component: () => import ("views/categoryView/CategoryView.vue") },
       { path: '/params', component: () => import ("views/paramsView/ParamsView.vue") },
-      { path: '/goods', component: () => import ("views/goodsView/GoodsView.vue") },
-      { path: '/addGoods', component: () => import ("views/addGoodsView/AddGoodsView.vue") }
+      { 
+        path: '/goods', 
+        name: 'goods',
+        component: () => import ("views/goodsView/GoodsView.vue"),
+      },
+      { path: '/addGoods', name: 'addGoods', component: () => import ("views/addGoodsView/AddGoodsView.vue") },
+      { path: '/orders', component: () => import ("views/orderView/OrderView.vue") }
     ] 
   }
 ]

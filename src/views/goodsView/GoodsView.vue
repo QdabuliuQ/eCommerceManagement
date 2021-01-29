@@ -35,8 +35,8 @@
         </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-button size="mini" type="primary" icon="el-icon-edit">编辑</el-button>
-            <el-button size="mini" type="danger" icon="el-icon-delete">删除</el-button>
+            <el-button @click="editGoodsData(scope.row)" size="mini" type="primary" icon="el-icon-edit">编辑</el-button>
+            <el-button @click="deleteGoodsData(scope.row)" size="mini" type="danger" icon="el-icon-delete">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -52,7 +52,7 @@
 
 <script>
 import BrandCrumb from "components/common/BrandCrumb";
-import {getGoodsDate} from "network/goods"
+import {getGoodsDate, deleteGoodsDetail} from "network/goods"
 
 export default {
   name: "GoodsView",
@@ -86,7 +86,8 @@ export default {
     
     // 页面发生改变
     handleCurrentChange(newValue) {
-      console.log(newValue);
+      this.pageInfo.pagenum = newValue
+      this.goodsDate()
     },
 
     // 搜索商品
@@ -105,7 +106,57 @@ export default {
     goAddView() {
       const arrName = ["商品管理","添加商品"]
       window.sessionStorage.setItem("menuName", JSON.stringify(arrName))
-      this.$router.push('/addGoods')
+      this.$router.push({
+        name: 'addGoods',
+        params: {
+          id: 0
+        }
+      })
+    },
+
+    // 修改商品信息
+    editGoodsData(goodsInfo) {
+      const arrName = ["商品管理","编辑商品"]
+      window.sessionStorage.setItem("menuName", JSON.stringify(arrName))
+      this.$router.push({
+        name: 'addGoods',
+        params: {
+          id: goodsInfo.goods_id
+        }
+      })
+    },
+
+    // 删除商品信息
+    deleteGoodsData(goodsInfo) {
+      this.$confirm('此操作将永久删除该商品信息, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteGoodsDetail(goodsInfo.goods_id).then(res => {
+          if (res.data.meta.status == 200) {
+            this.goodsDate() // 刷新数据
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+          } else {
+            this.$message({
+              type: 'error',
+              message: '删除失败'
+            });
+          }
+        })
+      }).catch();
+    }
+  },
+  
+  watch: {
+    // 监听输入框内容
+    'pageInfo.query': function(value){
+      if (value == '') {
+        this.goodsDate()
+      }
     }
   },
   components: {

@@ -27,4 +27,7 @@ export default {
   .el-step__title{
     font-size: 13px !important;
   }
+  .ql-editor{
+    min-height: 300px !important;
+  }
 </style>
