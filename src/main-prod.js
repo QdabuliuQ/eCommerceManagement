@@ -2,8 +2,8 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'   // 引入router
 import store from './store'  // 引入Vuex
-import ElementUI from 'element-ui'; // 导入element-ui包
-import 'element-ui/lib/theme-chalk/index.css'; // 导入相关样式
+// import ElementUI from 'element-ui'; // 导入element-ui包
+// import 'element-ui/lib/theme-chalk/index.css'; // 导入相关样式
 import { Message } from 'element-ui'
 import VueQuillEditor from 'vue-quill-editor'  // 使用富文本组件
 Vue.use(ElementUI); // 引用
@@ -12,9 +12,6 @@ Vue.component('tree-table', TreeTable)  // 全局注册组件
 
 import './assets/css/iconfont.css'   // 字体图标
 import './assets/css/base.css'  // 基本全局样式
-import 'quill/dist/quill.core.css' // 导入富文本编辑器样式
-import 'quill/dist/quill.snow.css' 
-import 'quill/dist/quill.bubble.css' 
 
 Vue.use(VueQuillEditor)  // 注册全局组件
 

@@ -150,10 +150,8 @@ export default {
         this.networkInfo.query, 
         this.networkInfo.pagenum, 
         this.networkInfo.pagesize
-      ).then(res => {
-        
+      ).then(res => {   
         this.orderData = res.data.data.goods
-        console.log(this.orderData);
         this.networkInfo.total = res.data.data.total
       })
     },

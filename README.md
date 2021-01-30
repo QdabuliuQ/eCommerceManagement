@@ -9,6 +9,115 @@
 * Vue-CLI：自动化构建工具。
 * ES6：采用ES6语法
 
+#### 项目优化：
+ * 1、`babel-plugin-transform-remove-console`的使用
+  * 1.1、在开发阶段会使用`console.log`进行调试，但是在发布阶段不需要输出
+  * 1.2、在发布阶段进行编译的时候会对`console.log`提示警告信息，使用`babel-plugin-transform-remove-console`在发布阶段清除掉所有的`console.log`
+  * 1.3、在依赖中选中开发依赖，按钮插件，安装完成后到`babel.config.js`文件进行配置，将 transform-remove-console 作为数组元素添加到 plugins 数组中
+  * 1.4、为了在开发阶段能够使用`console.log`，所以可以进行条件判断
+  ```js
+  const prodPlugins = [];  // 发布阶段需要用到的插件数组
+  if (process.env.NODE_ENV === "production") {  // 判断是否在发布阶段
+    prodPlugins.push('transform-remove-console')  // 添加插件
+  }
+
+  module.exports = {
+    plugins: [
+      ...prodPlugins  // 解构数组
+    ]
+  }
+  ```
+* 2、设置开发模式和发布模式每个的程序入口文件
+  * 2.1、在根目录下创建`vue.config.js`文件夹，可以在文件夹中配置路径别名或者程序的入口文件
+  * 2.2、在文件目录中分别创建`main-dev.js`(开发模式入口文件)和`main-prod.js`入口文件
+  * 2.3、获取到`NODE_ENV`进行判断，如果是发布模式下，则`clear()`清除入口文件，`add()`添加发布模式下指定的入口文件
+  ```js
+  module.exports = {  // 固定格式
+    chainWebpack: config => {
+      config.when(process.env.NODE_ENV === "production", config => {  // 发布模式
+        config.entry('app').clear().add('./src/main-prod.js')
+      })
+
+      config.when(process.env.NODE_ENV === "development", config => {  // 开发模式
+        config.entry('app').clear().add('./src/main-dev.js')
+      })
+    }
+  }
+  ```
+* 3、通过`externals`加载CDN外部资源
+  * 3.1、在项目中通过`import xxx from xxx`引入的资源也会一并打包到`dist`文件夹中，导致项目变得很大，可以使用`externals`指定哪一些资源是需要从CDN引入
+  * 3.2、还是在`vue.config.js`的chainWebpack对象上使用config.set()方法指定资源
+  ```js
+  chainWebpack: config => {
+    // 根据开发或者发布阶段决定 程序的入口文件
+    config.when(process.env.NODE_ENV === "production", config => { 
+    // 按需导入对应的文件
+    config.set('externals', {
+        vue: 'Vue',
+        'vue-router': 'VueRouter',
+        axios: 'axios',
+        lodash: '_',
+        echarts: 'echarts',
+        nprogress: 'NProgress',
+        'vue-quill-editor': 'VueQuillEditor',
+        'element-ui': 'ElementUI'
+    })
+  }
+  ```
+  * 3.3、在`main-prod.js`文件中将所有通过`import`引入资源全部注释。
+  * 3.4、在`index.html`首页，通过link的方法引入外部资源
+
+* 4、对开发模式和发布模式进行区分
+  * 4.1、通过动态设置网页的title来区分
+  * 4.2、通过条件判断，在args数组的第一个元素中追加isProd属性默认为true
+  ```js
+  chainWebpack: config => {
+    // 根据开发或者发布阶段决定 程序的入口文件
+    config.when(process.env.NODE_ENV === "production", config => {  // 发布模式
+      // 发布模式下显示不同的title标题，并且引入cdn资源，在开发模式下则不需要引入cdn资源
+      config.plugin('html').tap(args => {
+          args[0].isProd = true;  // 追加isProd属性
+          return args
+      })
+    })
+  }
+  ```
+  * 4.3、在`index.html`文件中使用模板字符串的方式进行条件判断
+  ```html
+  <title><%= htmlWebpackPlugin.options.isProd ? '' : 'dev - ' %>电商后台管理系统</title>
+  ```
+  * 4.4、同理，通过CDN引入的资源也要进行判断，如果是在发布模式则引入，开发模式下不需要引入，否则会出现冲突
+  ```html
+  <!-- 条件判断是否进入cdn资源 -->
+  <% if(htmlWebpackPlugin.options.isProd) { %>  
+    <!-- nprogress 的样式表文件 -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+  <% } %>  
+  <!-- 结尾符号 -->
+  ```
+* 5、路由的懒加载
+  * 5.1、可以使用`@babel/plugin-syntax-dynamic-import`插件来实现路由的懒加载
+  * 5.2、在依赖中选择开发依赖，搜索上面的关键字进行插件安装，安装完成后再`babel.config.js`文件夹中引入即可
+  ```js
+  const prodPlugins = [];  // 发布阶段需要用到的插件
+  if (process.env.NODE_ENV === "production") {  // 判断是否在发布阶段
+    prodPlugins.push('transform-remove-console')
+  }
+
+  module.exports = {
+    presets: [
+      '@vue/cli-plugin-babel/preset'
+    ],
+    plugins: [
+      ...prodPlugins,  // 解构数组
+      "@babel/plugin-syntax-dynamic-import"  // 路由懒加载插件
+    ] 
+  }
+  ```
+  * 5.3、在路由文件中使用`const 路由名称 = () => import(/* webpackChunkName: "组件打包分组名称" */ "组件路径")`进行引入
+    * 5.3.1、webpackChunkName属性可以设置一个名称，多个组件写同一个名称将会打包到同一个文件当中
+- - -
+
 #### 项目要点：
 * 1、token的注意事项
   * 1.1、在登录界面发送网络请求后获取到的 `token` 通过调用 `window.sessionStorage.setItem("token", res.data.data.token)` 存储到本地中，使用 sessionStorage 方法的原因：在关闭浏览器后清除内存，token属于一次性生效的数据，当退出或者关闭浏览器的时候清除
@@ -158,4 +267,22 @@
       this.$refs[refsIndex].$refs.input.focus(); // 自动获取焦点
     });
   },
+  ```
+
+* 7、nprogress插件的使用
+  * 7.1、通过 npm 的方式安装插件
+  * 7.2、在 request 文件中进行引入`import NProgress from "nprogress"  // 导入进度条组件`
+  * 7.3、通过在两个拦截器中调用 start() 和 done() 控制进度条的显示和隐藏
+  ```js
+  instance.interceptors.request.use(config => {
+    NProgress.start()
+    // api要求在对需要权限的所有api接口都要在请求头中添加 `Authorization` ：token
+    config.headers.Authorization = window.sessionStorage.getItem("token")  // 将token放入请求头中
+    return config
+  })
+
+  instance.interceptors.response.use(config => {
+    NProgress.done()
+    return config
+  })
   ```

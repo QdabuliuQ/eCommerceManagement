@@ -3,9 +3,19 @@ import VueRouter from 'vue-router'
 
 Vue.use(VueRouter)
 // 路由懒加载
-const login = () => import ("views/login/Login.vue")   // 登录页面
-const managementView = () => import ("views/managementView/ManagementView.vue")  // 管理页面
-const welcomeView = () => import ("views/welcomeView/WelcomeView.vue")  // 欢迎界面
+// webpackChunkName可以将多个组件打包成为一个组
+const login = () => import(/* webpackChunkName: "login_managementView_welcomeView" */ "views/login/Login.vue")  // 登录页面
+const managementView = () => import(/* webpackChunkName: "login_managementView_welcomeView" */ "views/managementView/ManagementView.vue")  // 管理页面
+const welcomeView = () => import(/* webpackChunkName: "login_managementView_welcomeView" */ "views/welcomeView/WelcomeView.vue")  // 欢迎界面
+const User = () => import(/* webpackChunkName: "User_Power_Roles" */ "views/userView/User.vue")  // 用户界面
+const Power = () => import(/* webpackChunkName: "User_Power_Roles" */ "views/powerView/Power.vue")  // 权限页面
+const Roles = () => import(/* webpackChunkName: "User_Power_Roles" */ "views/rolesView/Roles.vue")  // 角色页面
+const CategoryView = () => import(/* webpackChunkName: "CategoryView_ParamsView_GoodsView" */ "views/categoryView/CategoryView.vue")  // 分类页面
+const ParamsView = () => import(/* webpackChunkName: "CategoryView_ParamsView_GoodsView" */ "views/paramsView/ParamsView.vue")  // 参数页面
+const GoodsView = () => import(/* webpackChunkName: "CategoryView_ParamsView_GoodsView" */ "views/goodsView/GoodsView.vue")  // 商品页面
+const AddGoodsView = () => import(/* webpackChunkName: "AddGoodsView_OrderView_ReportView" */ "views/addGoodsView/AddGoodsView.vue")  // 添加商品页面
+const OrderView = () => import(/* webpackChunkName: "AddGoodsView_OrderView_ReportView" */ "views/orderView/OrderView.vue")  // 订单页面 
+const ReportView = () => import(/* webpackChunkName: "AddGoodsView_OrderView_ReportView" */ "views/reportView/ReportView.vue")  // 数据报表
 
 const routes = [
   { path: '/', redirect: '/login' },   // 路由重定向
@@ -16,18 +26,19 @@ const routes = [
     redirect: '/welcome',   // 路由重定向
     children:[
       { path: '/welcome', component: welcomeView },
-      { path: '/users', component: () => import ("views/userView/User.vue")},
-      { path: '/rights', component: () => import ("views/powerView/Power.vue")},
-      { path: '/roles', component: () => import ("views/rolesView/Roles.vue") },
-      { path: '/categories', component: () => import ("views/categoryView/CategoryView.vue") },
-      { path: '/params', component: () => import ("views/paramsView/ParamsView.vue") },
+      { path: '/users', component: User},
+      { path: '/rights', component: Power},
+      { path: '/roles', component: Roles },
+      { path: '/categories', component: CategoryView },
+      { path: '/params', component: ParamsView },
       { 
         path: '/goods', 
         name: 'goods',
-        component: () => import ("views/goodsView/GoodsView.vue"),
+        component: GoodsView,
       },
-      { path: '/addGoods', name: 'addGoods', component: () => import ("views/addGoodsView/AddGoodsView.vue") },
-      { path: '/orders', component: () => import ("views/orderView/OrderView.vue") }
+      { path: '/addGoods', name: 'addGoods', component: AddGoodsView },
+      { path: '/orders', component: OrderView },
+      { path: '/reports', component: ReportView }
     ] 
   }
 ]

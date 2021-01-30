@@ -1,5 +1,5 @@
 import axios from "axios";    // 引入axios
-
+import NProgress from "nprogress"  // 导入进度条组件
 export function request(config) {
   const instance = axios.create({
     // 根路径
@@ -8,14 +8,20 @@ export function request(config) {
     // 请求时间
     timeout: 5000,
   })
-
+  let loadingInstance = null
   // 拦截请求
   // use方法传递两个函数
   // 拦截器在发送请求成功后，对该请求进行拦截，在发送请求就会输出 config
   // 通过 return 将拦截的内容返回，则不会触发 err
   instance.interceptors.request.use(config => {
+    NProgress.start()
     // api要求在对需要权限的所有api接口都要在请求头中添加 `Authorization` ：token
     config.headers.Authorization = window.sessionStorage.getItem("token")  // 将token放入请求头中
+    return config
+  })
+
+  instance.interceptors.response.use(config => {
+    NProgress.done()
     return config
   })
 
