@@ -10,7 +10,7 @@
 * ES6：采用ES6语法
 
 #### 项目优化：
- * 1、`babel-plugin-transform-remove-console`的使用
+* 1、`babel-plugin-transform-remove-console`的使用
   * 1.1、在开发阶段会使用`console.log`进行调试，但是在发布阶段不需要输出
   * 1.2、在发布阶段进行编译的时候会对`console.log`提示警告信息，使用`babel-plugin-transform-remove-console`在发布阶段清除掉所有的`console.log`
   * 1.3、在依赖中选中开发依赖，按钮插件，安装完成后到`babel.config.js`文件进行配置，将 transform-remove-console 作为数组元素添加到 plugins 数组中
